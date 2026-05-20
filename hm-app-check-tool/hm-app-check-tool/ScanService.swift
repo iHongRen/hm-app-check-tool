@@ -118,7 +118,7 @@ final class ScanService {
 
     var enableDuplicate = true
     var enableFileSize = true
-    var fileSizeThreshold: Int = 100
+    var fileSizeThreshold: Int = 512
     var enableSuffix = true
 
     var inputFilePath: String?

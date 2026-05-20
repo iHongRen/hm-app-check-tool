@@ -5,7 +5,7 @@ struct ContentView: View {
     @State private var service = ScanService()
     @State private var isDragOver = false
     @State private var showFilePicker = false
-    @State private var showJARPicker = false
+    @State private var fileSizeThresholdText: String = ""
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -14,7 +14,6 @@ struct ContentView: View {
             Divider()
             ScrollView {
                 VStack(spacing: 20) {
-                    environmentSection
                     dropZoneSection
                     optionsSection
                     if service.isScanning {
@@ -26,11 +25,19 @@ struct ContentView: View {
                 }
                 .padding(24)
             }
-        }
-        .frame(minWidth: 680, minHeight: 600)
+            }
+        .frame(minWidth: service.results != nil ? 960 : 680, minHeight: service.results != nil ? expandedMinHeight : 360)
         .background(Color(nsColor: .windowBackgroundColor))
+        .task {
+            await service.checkEnvironment()
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            isTextFieldFocused = false
+        }
         .onTapGesture {
             isTextFieldFocused = false
+        }
+        .onChange(of: service.results != nil) { hasResults in
+            resizeWindowToContent()
         }
     }
 
@@ -43,91 +50,38 @@ struct ContentView: View {
                 .foregroundStyle(Color.accentColor)
             Text("HarmonyOS App 扫描工具")
                 .font(.headline)
+
             Spacer()
+
+            HStack(spacing: 12) {
+                linkButton("GitHub", icon: "link", url: "https://github.com/iHongRen/hm-app-check-tool")
+                linkButton("扫描工具文档", icon: "doc.text", url: "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/app-check-tool")
+                linkButton("包体积优化", icon: "shippingbox", url: "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-decrease_pakage_size#section1660158101012")
+            }
+
             if service.isScanning {
                 ProgressView()
                     .controlSize(.small)
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .background(Color(nsColor: .controlBackgroundColor))
     }
 
-    // MARK: - Environment Check
-
-    private var environmentSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("环境检测")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 16) {
-                statusChip(
-                    available: service.javaAvailable,
-                    label: "Java",
-                    detail: service.javaVersion ?? "未找到",
-                    path: service.javaPath
-                )
-                statusChip(
-                    available: service.jarAvailable || service.jarPathOverride != nil,
-                    label: "扫描工具",
-                    detail: (service.effectiveJarPath ?? "未找到").abbreviatedPath,
-                    path: service.effectiveJarPath
-                )
-                if !service.jarAvailable && service.jarPathOverride == nil {
-                    Button("选择 JAR...") {
-                        showJARPicker = true
-                    }
-                    .controlSize(.small)
-                }
-                Spacer()
-                Button("重新检测") {
-                    Task { await service.checkEnvironment() }
-                }
-                .controlSize(.small)
+    private func linkButton(_ title: String, icon: String, url: String) -> some View {
+        Button {
+            NSWorkspace.shared.open(URL(string: url)!)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption)
+                Text(title)
+                    .font(.caption)
             }
         }
-        .onAppear {
-            Task { await service.checkEnvironment() }
-        }
-        .fileImporter(isPresented: $showJARPicker, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
-            guard let url = try? result.get().first else { return }
-            service.jarPathOverride = url.path
-        }
-    }
-
-    private func statusChip(available: Bool, label: String, detail: String, path: String? = nil) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: available ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundStyle(available ? .green : .red)
-                .font(.body)
-            Text(label)
-                .font(.body.bold())
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(available ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
-        )
-        .onTapGesture {
-            if let path = path, !path.isEmpty {
-                let url = URL(fileURLWithPath: path)
-                let directory: URL
-                if url.hasDirectoryPath {
-                    directory = url
-                } else {
-                    directory = url.deletingLastPathComponent()
-                }
-                NSWorkspace.shared.open(directory)
-            }
-        }
-        .help(path ?? "")
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
     }
 
     // MARK: - Drop Zone
@@ -143,26 +97,23 @@ struct ContentView: View {
     }
 
     private var emptyDropZone: some View {
-        Button {
-            showFilePicker = true
-        } label: {
-            VStack(spacing: 16) {
-                Image(systemName: "arrow.down.doc")
-                    .font(.system(size: 48))
-                    .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
-                Text("拖入 .hap / .hsp / .app 文件")
-                    .font(.title3)
-                    .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
-                Text("或点击选择文件")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(40)
+        VStack(spacing: 16) {
+            Image(systemName: "arrow.down.doc")
+                .font(.system(size: 48))
+                .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
+            Text("拖入 .hap / .hsp / .app 文件")
+                .font(.title3)
+                .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
+            Text("或点击选择文件")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
-        .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
+        .padding(40)
         .contentShape(Rectangle())
+        .onTapGesture {
+            showFilePicker = true
+        }
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(isDragOver ? Color.accentColor.opacity(0.06) : Color(nsColor: .textBackgroundColor))
@@ -197,15 +148,13 @@ struct ContentView: View {
             }
             Spacer()
             Button {
-                service.inputFilePath = nil
-                service.inputFileName = nil
-                service.results = nil
-                service.scanError = nil
+                removeInputFile()
             } label: {
                 Image(systemName: "xmark.circle")
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
+            .disabled(service.isScanning)
         }
         .padding(16)
         .background(
@@ -232,10 +181,25 @@ struct ContentView: View {
                 if service.enableFileSize {
                     HStack(spacing: 4) {
                         Text(">")
-                        TextField("KB", value: $service.fileSizeThreshold, format: .number)
+                        TextField("KB", text: $fileSizeThresholdText)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 60)
                             .focused($isTextFieldFocused)
+                            .onChange(of: fileSizeThresholdText) { newValue in
+                                let filtered = newValue.filter { $0.isNumber }
+                                if filtered != newValue {
+                                    fileSizeThresholdText = filtered
+                                }
+                                if let intValue = Int(filtered), intValue > 0 {
+                                    service.fileSizeThreshold = intValue
+                                }
+                            }
+                            .onAppear {
+                                fileSizeThresholdText = String(service.fileSizeThreshold)
+                                DispatchQueue.main.async {
+                                    isTextFieldFocused = false
+                                }
+                            }
                         Text("KB")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -412,7 +376,7 @@ struct ContentView: View {
                         .foregroundStyle(.green)
                 }
             } else {
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(result.details) { entry in
                         duplicateGroupRow(entry)
                     }
@@ -425,19 +389,19 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Text(ByteCountFormatter.string(fromByteCount: Int64(entry.sizeBytes), countStyle: .file))
-                    .font(.caption.bold())
+                    .font(.body.bold())
                     .foregroundStyle(.orange)
                 Text("\(entry.count) 个重复文件")
-                    .font(.caption)
+                    .font(.body)
                     .foregroundStyle(.secondary)
             }
             ForEach(entry.files, id: \.self) { path in
                 HStack(spacing: 4) {
                     Image(systemName: "doc")
-                        .font(.caption2)
+                        .font(.body)
                         .foregroundStyle(.secondary)
                     Text(path)
-                        .font(.caption)
+                        .font(.body)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -445,6 +409,7 @@ struct ContentView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(8)
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -571,6 +536,28 @@ struct ContentView: View {
 
     // MARK: - Helpers
 
+    private var expandedMinHeight: CGFloat {
+        NSScreen.main.map { $0.visibleFrame.height * 0.9 } ?? 800
+    }
+
+    private func removeInputFile() {
+        service.inputFilePath = nil
+        service.inputFileName = nil
+        service.results = nil
+        service.scanError = nil
+        resizeWindowToContent()
+    }
+
+    private func resizeWindowToContent() {
+        guard let window = NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first else { return }
+        let width: CGFloat = service.results != nil ? 960 : 680
+        let height: CGFloat = service.results != nil ? expandedMinHeight : 360
+        var frame = window.frame
+        frame.size.width = width
+        frame.size.height = height
+        window.setFrame(frame, display: true, animate: true)
+    }
+
     private var supportedTypes: [UTType] {
         [.item]
     }
@@ -617,6 +604,7 @@ struct ContentView: View {
         service.inputFileName = URL(fileURLWithPath: cleanPath).lastPathComponent
         service.results = nil
         service.scanError = nil
+        Task { await service.startScan() }
     }
 }
 
