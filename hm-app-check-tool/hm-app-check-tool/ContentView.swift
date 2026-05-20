@@ -41,7 +41,7 @@ struct ContentView: View {
             Image(systemName: "shield.checkered")
                 .font(.title2)
                 .foregroundStyle(Color.accentColor)
-            Text("HarmonyOS App 检测工具")
+            Text("HarmonyOS App 扫描工具")
                 .font(.headline)
             Spacer()
             if service.isScanning {
@@ -71,7 +71,7 @@ struct ContentView: View {
                 )
                 statusChip(
                     available: service.jarAvailable || service.jarPathOverride != nil,
-                    label: "检测工具",
+                    label: "扫描工具",
                     detail: (service.effectiveJarPath ?? "未找到").abbreviatedPath,
                     path: service.effectiveJarPath
                 )
@@ -143,23 +143,26 @@ struct ContentView: View {
     }
 
     private var emptyDropZone: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "arrow.down.doc")
-                .font(.system(size: 48))
-                .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
-            Text("拖入 .hap / .hsp / .app 文件")
-                .font(.title3)
-                .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
-            Text("或点击选择文件")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-            Button("选择文件") {
-                showFilePicker = true
+        Button {
+            showFilePicker = true
+        } label: {
+            VStack(spacing: 16) {
+                Image(systemName: "arrow.down.doc")
+                    .font(.system(size: 48))
+                    .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
+                Text("拖入 .hap / .hsp / .app 文件")
+                    .font(.title3)
+                    .foregroundStyle(isDragOver ? Color.accentColor : .secondary)
+                Text("或点击选择文件")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
-            .controlSize(.regular)
+            .frame(maxWidth: .infinity)
+            .padding(40)
         }
+        .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-        .padding(40)
+        .contentShape(Rectangle())
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(isDragOver ? Color.accentColor.opacity(0.06) : Color(nsColor: .textBackgroundColor))
@@ -239,9 +242,6 @@ struct ContentView: View {
                     }
                 }
                 toggleOption("文件后缀", isOn: $service.enableSuffix, icon: "doc.text.magnifyingglass")
-            }
-
-            HStack {
                 Spacer()
                 Button {
                     Task { await service.startScan() }
