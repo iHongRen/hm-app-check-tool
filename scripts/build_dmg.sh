@@ -30,16 +30,11 @@ xcodebuild \
     -scheme "$APP_NAME" \
     -configuration Release \
     -derivedDataPath "$DERIVED_DATA" \
-    SWIFT_OPTIMIZATION_LEVEL="-Onone" \
     build
 
-echo "=== 移除隔离属性和无用文件 ==="
-APP_PATH="$DERIVED_DATA/Build/Products/Release/${APP_NAME}.app"
+echo "=== 移除隔离属性 ==="
+APP_PATH=$(echo "$DERIVED_DATA/Build/Products/Release/"*.app | head -1)
 xattr -cr "$APP_PATH"
-
-# 删除不必要的 dylib（编译器 beta 版本自动生成的调试/预览库）
-rm -f "$APP_PATH/Contents/MacOS/"*.debug.dylib \
-      "$APP_PATH/Contents/MacOS/__preview.dylib"
 
 echo "=== 制作 DMG ==="
 cp -R "$APP_PATH" "$DMG_STAGING/"
