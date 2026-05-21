@@ -33,17 +33,25 @@
 
 ## 快速开始
 
-1. 下载最新版本的 [hm-app-check-tool.dmg](https://github.com/iHongRen/hm-app-check-tool/releases) ， 安装到`应用程序`
+### 方式一：命令行安装（推荐）
 
-2. 在终端执行下面命令，才能正常使用。(未签名应用去除隔离属性)
+```bash
+curl -fsSL https://raw.githubusercontent.com/iHongRen/hm-app-check-tool/main/install.sh | bash
+```
+
+### 方式二：手动安装
+
+1. 下载最新版本的 [hm-app-check-tool.dmg](https://github.com/iHongRen/hm-app-check-tool/releases) ，安装到 `应用程序`
+
+2. 在终端执行下面命令，才能正常使用（未签名应用去除隔离属性）：
 
    ```sh
    xattr -dr com.apple.quarantine /Applications/hm-app-check-tool.app
    ```
 
-3. 启动后拖入 `.hap` / `.hsp` / `.app` 文件，扫描将自动开始
+### 开始使用
 
-4. 查看结果，或滚动到底部点击「打开 HTML 报告」在浏览器中查看详细报告
+启动后拖入 `.hap` / `.hsp` / `.app` 文件，扫描将自动开始。查看结果后，可滚动到底部点击「打开 HTML 报告」在浏览器中查看详细报告。
 
 ## 从源码构建
 
