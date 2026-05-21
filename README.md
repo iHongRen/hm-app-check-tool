@@ -36,7 +36,7 @@
 ### 方式一：命令行安装（推荐）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/iHongRen/hm-app-check-tool/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/iHongRen/hm-app-check-tool/main/scripts/install.sh | bash
 ```
 
 ### 方式二：手动安装

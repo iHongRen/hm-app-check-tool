@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ---------------------------------------------------------------
 # hm-app-check-tool 一键安装脚本
-# curl -fsSL https://raw.githubusercontent.com/iHongRen/hm-app-check-tool/main/install.sh | bash
+# curl -fsSL https://raw.githubusercontent.com/iHongRen/hm-app-check-tool/main/scripts/install.sh | bash
 # ---------------------------------------------------------------
 
 readonly APP_NAME="hm-app-check-tool"
