@@ -27,21 +27,27 @@ if [ -d "/Applications/${APP_NAME}.app" ]; then
     rm -rf "/Applications/${APP_NAME}.app"
 fi
 
-# 获取最新版本号
+# 获取最新版本号及下载链接
 echo "获取最新版本信息..."
 RELEASE_INFO=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")
 VERSION=$(echo "$RELEASE_INFO" | grep '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
 readonly VERSION="${VERSION:-v1.0}"
 echo "最新版本: ${VERSION}"
 
-# 下载 DMG
-DMG_URL="https://github.com/${REPO}/releases/latest/download/${APP_NAME}-${VERSION#v}.dmg"
+# 从 assets 中找到 .dmg 的下载链接
+DMG_URL=$(echo "$RELEASE_INFO" | grep -Eo '"browser_download_url": *"[^"]+\.dmg"' | head -1 | sed -E 's/.*"browser_download_url": *"([^"]+)".*/\1/')
+
+if [ -z "$DMG_URL" ]; then
+    echo "错误: 未找到 .dmg 下载链接，请确认 Release 中已上传 DMG 文件。"
+    exit 1
+fi
+
 echo "下载 ${DMG_URL} ..."
 curl -fsSLO --output-dir "$TEMP_DIR" "$DMG_URL"
 DMG_FILE=$(ls "$TEMP_DIR"/*.dmg | head -1)
 
 if [ ! -f "$DMG_FILE" ]; then
-    echo "错误: 下载失败，未找到 DMG 文件"
+    echo "错误: 下载失败"
     exit 1
 fi
 
