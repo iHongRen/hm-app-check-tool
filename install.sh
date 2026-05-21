@@ -84,3 +84,5 @@ xattr -dr com.apple.quarantine "/Applications/${APP_DIRNAME}" 2>/dev/null || tru
 echo "=== 安装完成 ==="
 echo "已安装到: /Applications/${APP_DIRNAME}"
 echo "首次打开时，若提示无法验证开发者，请在「系统设置 → 隐私与安全性」中允许。"
+echo "正在启动..."
+open "/Applications/${APP_DIRNAME}"
