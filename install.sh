@@ -21,12 +21,6 @@ trap cleanup EXIT
 
 echo "=== ${APP_NAME} 安装脚本 ==="
 
-# 检查是否安装了旧版本
-if [ -d "/Applications/${APP_NAME}.app" ]; then
-    echo "已安装版本将被覆盖。"
-    rm -rf "/Applications/${APP_NAME}.app"
-fi
-
 # 获取最新版本号及下载链接
 echo "获取最新版本信息..."
 RELEASE_INFO=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")
@@ -56,9 +50,28 @@ echo "挂载 DMG..."
 mkdir -p "$TEMP_DIR/mount"
 hdiutil attach "$DMG_FILE" -mountpoint "$TEMP_DIR/mount" -nobrowse -quiet
 
+# 找到 DMG 中的 .app
+APP_BUNDLE=$(echo "$TEMP_DIR/mount/"*.app | head -1)
+APP_DIRNAME=$(basename "$APP_BUNDLE")
+readonly APP_BUNDLE APP_DIRNAME
+
+if [ ! -d "$APP_BUNDLE" ]; then
+    echo "错误: DMG 中未找到 .app"
+    exit 1
+fi
+
+# 卸载旧版本（同时兼容新旧名称）
+if [ -d "/Applications/${APP_DIRNAME}" ]; then
+    echo "已安装版本将被覆盖。"
+    rm -rf "/Applications/${APP_DIRNAME}"
+fi
+if [ -d "/Applications/${APP_NAME}.app" ]; then
+    rm -rf "/Applications/${APP_NAME}.app"
+fi
+
 # 拷贝到 /Applications
-echo "安装到 /Applications..."
-cp -R "$TEMP_DIR/mount/${APP_NAME}.app" /Applications/
+echo "安装到 /Applications/${APP_DIRNAME} ..."
+cp -R "$APP_BUNDLE" /Applications/
 
 # 卸载 DMG
 echo "卸载 DMG..."
@@ -66,8 +79,8 @@ hdiutil detach "$TEMP_DIR/mount" -quiet
 
 # 移除隔离属性
 echo "移除隔离属性..."
-xattr -dr com.apple.quarantine "/Applications/${APP_NAME}.app" 2>/dev/null || true
+xattr -dr com.apple.quarantine "/Applications/${APP_DIRNAME}" 2>/dev/null || true
 
 echo "=== 安装完成 ==="
-echo "已安装到: /Applications/${APP_NAME}.app"
+echo "已安装到: /Applications/${APP_DIRNAME}"
 echo "首次打开时，若提示无法验证开发者，请在「系统设置 → 隐私与安全性」中允许。"
