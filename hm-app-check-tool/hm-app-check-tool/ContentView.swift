@@ -36,7 +36,7 @@ struct ContentView: View {
         .onTapGesture {
             isTextFieldFocused = false
         }
-        .onChange(of: service.results != nil) { hasResults in
+        .onChange(of: service.results != nil) { _, _ in
             resizeWindowToContent()
         }
     }
@@ -48,7 +48,7 @@ struct ContentView: View {
             Image(systemName: "shield.checkered")
                 .font(.title2)
                 .foregroundStyle(Color.accentColor)
-            Text("HarmonyOS App 扫描工具")
+            Text("用于分析检测应用安装包")
                 .font(.headline)
 
             Spacer()
@@ -185,7 +185,7 @@ struct ContentView: View {
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 60)
                             .focused($isTextFieldFocused)
-                            .onChange(of: fileSizeThresholdText) { newValue in
+                            .onChange(of: fileSizeThresholdText) { _, newValue in
                                 let filtered = newValue.filter { $0.isNumber }
                                 if filtered != newValue {
                                     fileSizeThresholdText = filtered
@@ -221,9 +221,9 @@ struct ContentView: View {
 
     private func toggleOption(_ title: String, isOn: Binding<Bool>, icon: String) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundStyle(isOn.wrappedValue ? Color.accentColor : .secondary)
+//            Image(systemName: icon)
+//                .font(.caption)
+//                .foregroundStyle(isOn.wrappedValue ? Color.accentColor : .secondary)
             Toggle(title, isOn: isOn)
                 .toggleStyle(.checkbox)
         }
