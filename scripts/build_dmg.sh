@@ -14,7 +14,7 @@ readonly APP_NAME="hm-app-check-tool"
 cd "$ROOT_DIR"
 
 # 读取版本号
-VERSION=$(awk -F'"' '/MARKETING_VERSION/ {print $2; exit}' "$PROJECT_DIR/hm-app-check-tool.xcodeproj/project.pbxproj")
+VERSION=$(awk '/MARKETING_VERSION/ {gsub(/;/,""); print $NF; exit}' "$PROJECT_DIR/hm-app-check-tool.xcodeproj/project.pbxproj")
 readonly VERSION="${VERSION:-1.0}"
 readonly DMG_NAME="${APP_NAME}-${VERSION}.dmg"
 readonly DMG_STAGING="$BUILD_DIR/dmg_staging"
